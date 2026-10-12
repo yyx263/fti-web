@@ -43,3 +43,11 @@ body {
   color: #d75834;
   text-decoration: underline;
 }
+
+.markdown-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border-radius: 0.75rem;
+}
