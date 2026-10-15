@@ -1,7 +1,7 @@
 // 文章详情页
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPosts } from "@/data/posts";
+import { getPostById } from "@/data/posts";
 import Markdown from "react-markdown";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +12,7 @@ type PostPageProps = {
 
 export default async function PostPage(props:PostPageProps) {
   const params = await props.params;
-  const posts = await getPosts();
-
-  const post = posts.find((item) => item.id === params.id);
+  const post = await getPostById(params.id);
 
   if (!post) {
     notFound();
@@ -30,9 +28,21 @@ export default async function PostPage(props:PostPageProps) {
       </Link>
 
       <article className="mt-10">
-        <p className="text-sm text-[#72766c]">
-          {post.date}
-        </p>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-[#72766c]">
+          <time dateTime={post.date}>{post.date}</time>
+
+          <span aria-hidden="true">·</span>
+          
+          <Link
+            href={{
+              pathname: "/blog",
+              query: { category: post.category },
+            }}
+            className="hover:text-[#d75834]"
+          >
+            {post.category}
+          </Link>
+        </div>
 
         <h1 className="mt-4 text-4xl font-bold leading-relaxed">
           {post.title}
@@ -41,6 +51,19 @@ export default async function PostPage(props:PostPageProps) {
         <p className="mt-6 leading-8 text-[#72766c]">
           {post.description}
         </p>
+
+        {post.tags.length > 0 && (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {post.tags.map((tag) => (
+              <li
+                key={tag}
+                className="rounded-full bg-[#eae8df] px-3 py-1 text-xs text-[#72766c]"
+              >
+                #{tag}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="mt-10 markdown-body">
           <Markdown>{post.content}</Markdown>

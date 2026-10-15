@@ -1,11 +1,11 @@
 import Link from "next/link";
 import PostCard from "@/components/PostCard";
-import { getPosts } from "@/data/posts";
+import { getPostSummaries } from "@/data/posts";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const posts = await getPosts();
+  const posts = await getPostSummaries();
   const recentPosts = posts.slice(0, 3);
   const titleName = "让想法有形，让日常留影。";
   const description = "这里记录我们的工作和日常，以及一些尚未被证伪的奇思妙想";
@@ -51,6 +51,8 @@ export default async function Home() {
               title={post.title}
               date={post.date}
               description={post.description}
+              category={post.category}
+              tags={post.tags}
             />
           ))
         ) : (
