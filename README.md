@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FTI Web
+
+一个用于学习 Next.js 的个人网站，展示 DIY、插画、摄影作品和博客。
+
+## 内容管理
+
+- 网站源码保存在 GitHub。
+- 博客 Markdown 和图片存放在 NAS 独立目录。
+- 网站通过只读挂载读取内容，发布文章无需重建容器。
+- NAS 定时检查 main 分支，有新提交时自动构建和部署。
 
 ## Getting Started
 
