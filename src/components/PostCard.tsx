@@ -45,11 +45,16 @@ export default function PostCard(props: PostCardProps) {
       {props.tags.length > 0 && (
         <ul className="mt-4 flex flex-wrap gap-2">
           {props.tags.map((tag) => (
-            <li
-              key={tag}
-              className="rounded-full bg-[#eae8df] px-3 py-1 text-xs text-[#72766c]"
-            >
-              #{tag}
+            <li key={tag}>
+              <Link
+                href={{
+                  pathname: "/blog",
+                  query: { tag },
+                }}
+                className="block rounded-full bg-[#eae8df] px-3 py-1 text-xs text-[#72766c] hover:bg-[#dedcd2] hover:text-[#272c29]"
+              >
+                #{tag}
+              </Link>
             </li>
           ))}
         </ul>

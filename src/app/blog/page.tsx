@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 type BlogPageProps = {
   searchParams: Promise<{
     category?: string | string[];
+    tag?: string | string[];
+    page?: string | string[];
   }>;
 };
 
@@ -15,9 +17,16 @@ export default async function BlogPage(props: BlogPageProps) {
   const searchParams = await props.searchParams;
   const posts = await getPostSummaries();
 
+  // 指定分类
   const selectedCategory =
     typeof searchParams.category === "string"
       ? searchParams.category
+      : "";
+
+  // 指定tag
+  const selectedTag =
+    typeof searchParams.tag === "string"
+      ? searchParams.tag
       : "";
 
   const categories = [
@@ -29,13 +38,95 @@ export default async function BlogPage(props: BlogPageProps) {
     return 0;
   });
 
-  const filteredPosts = selectedCategory
-    ? posts.filter((post) => post.category === selectedCategory)
-    : posts;
+  // 先按分类和tag筛选
+  const filteredPosts = posts.filter((post) => {
+    const matchesCategory =
+      selectedCategory === "" ||
+      post.category === selectedCategory;
+  
+    const matchesTag =
+      selectedTag === "" ||
+      post.tags.includes(selectedTag);
+  
+    return matchesCategory && matchesTag;
+  });
+
+  // 分页
+  const pageSize = 10;
+
+  const pageValue =
+    typeof searchParams.page === "string"
+      ? Number(searchParams.page)
+      : 1;
+
+  const requestedPage =
+    Number.isSafeInteger(pageValue) && pageValue >= 1
+      ? pageValue
+      : 1;
+
+  // 至少显示1页
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPosts.length / pageSize)
+  );
+
+  // 最多不超过总页数
+  const currentPage = Math.min(requestedPage, totalPages);
+
+  const startIndex = (currentPage - 1) * pageSize;
+
+  const paginatedPosts = filteredPosts.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+
+  // 制作翻页链接
+  function getPageHref(page: number) {
+    const query: Record<string, string> = {};
+  
+    if (selectedCategory) {
+      query.category = selectedCategory;
+    }
+  
+    if (page > 1) {
+      query.page = String(page);
+    }
+
+    if (selectedTag) {
+      query.tag = selectedTag;
+    }
+  
+    return {
+      pathname: "/blog",
+      query,
+    };
+  }
+
+  // 制作切换分类链接
+  function getCategoryHref(category: string) {
+    const query: Record<string, string> = {};
+  
+    if (category) {
+      query.category = category;
+    }
+  
+    if (selectedTag) {
+      query.tag = selectedTag;
+    }
+  
+    return {
+      pathname: "/blog",
+      query,
+    };
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-20">
-      <h1 className="text-4xl font-bold">
+      <p className="text-sm tracking-widest text-[#72766c]">
+        BLOG
+      </p>
+
+      <h1 className="mt-3 text-4xl font-bold">
         博客
       </h1>
 
@@ -45,10 +136,10 @@ export default async function BlogPage(props: BlogPageProps) {
 
       <nav
         aria-label="博客分类"
-        className="mt-8 flex flex-wrap gap-2"
+        className="mt-12 flex flex-wrap gap-2"
       >
         <Link
-          href="/blog"
+          href={getCategoryHref("")}
           aria-current={selectedCategory === "" ? "page" : undefined}
           className={`rounded-full px-4 py-2 text-sm ${
             selectedCategory === ""
@@ -62,10 +153,7 @@ export default async function BlogPage(props: BlogPageProps) {
         {categories.map((category) => (
           <Link
             key={category}
-            href={{
-              pathname: "/blog",
-              query: { category },
-            }}
+            href={getCategoryHref(category)}
             aria-current={
               selectedCategory === category ? "page" : undefined
             }
@@ -80,6 +168,29 @@ export default async function BlogPage(props: BlogPageProps) {
         ))}
       </nav>
 
+      {selectedTag && (
+        <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-[#72766c]">
+            当前标签：
+            <strong className="font-medium text-[#272c29]">
+              #{selectedTag}
+            </strong>
+          </span>
+
+          <Link
+            href={{
+              pathname: "/blog",
+              query: selectedCategory
+                ? { category: selectedCategory }
+                : {},
+            }}
+            className="text-[#d75834] hover:underline"
+          >
+            清除标签
+          </Link>
+        </div>
+      )}
+
       <section className="mt-8">
         <h2 className="text-xl leading-16 font-semibold border-b border-[#d8d8ce]">
           {selectedCategory || "全部文章"}
@@ -88,7 +199,7 @@ export default async function BlogPage(props: BlogPageProps) {
           </span>
         </h2>
 
-        {filteredPosts.map((post) => (
+        {paginatedPosts.map((post) => (
           <PostCard
             key={post.id}
             id={post.id}
@@ -104,6 +215,49 @@ export default async function BlogPage(props: BlogPageProps) {
           <p className="py-10 text-[#72766c]">
             暂时没有符合条件的文章。
           </p>
+        )}
+
+        {totalPages > 1 && (
+          <nav
+            aria-label="博客分页"
+            className="mt-10 flex items-center justify-between gap-4 text-sm"
+          >
+            {currentPage > 1 ? (
+              <Link
+                href={getPageHref(currentPage - 1)}
+                className="rounded-md border border-[#d8d8ce] px-4 py-2 hover:bg-[#eae8df]"
+              >
+                ← 上一页
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="rounded-md border border-[#d8d8ce] px-4 py-2 text-[#72766c] opacity-40"
+              >
+                ← 上一页
+              </span>
+            )}
+
+            <span className="text-[#72766c]">
+              第 {currentPage} / {totalPages} 页
+            </span>
+
+            {currentPage < totalPages ? (
+              <Link
+                href={getPageHref(currentPage + 1)}
+                className="rounded-md border border-[#d8d8ce] px-4 py-2 hover:bg-[#eae8df]"
+              >
+                下一页 →
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="rounded-md border border-[#d8d8ce] px-4 py-2 text-[#72766c] opacity-40"
+              >
+                下一页 →
+              </span>
+            )}
+          </nav>
         )}
       </section>
     </main>

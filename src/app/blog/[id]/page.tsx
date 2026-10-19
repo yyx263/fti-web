@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostById } from "@/data/posts";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const dynamic = "force-dynamic";
 
@@ -55,18 +56,55 @@ export default async function PostPage(props:PostPageProps) {
         {post.tags.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">
             {post.tags.map((tag) => (
-              <li
-                key={tag}
-                className="rounded-full bg-[#eae8df] px-3 py-1 text-xs text-[#72766c]"
-              >
-                #{tag}
+              <li key={tag}>
+                <Link
+                  href={{
+                    pathname: "/blog",
+                    query: { tag },
+                  }}
+                  className="block rounded-full bg-[#eae8df] px-3 py-1 text-xs text-[#72766c] hover:bg-[#dedcd2] hover:text-[#272c29]"
+                >
+                  #{tag}
+                </Link>
               </li>
             ))}
           </ul>
         )}
 
         <div className="mt-10 markdown-body">
-          <Markdown>{post.content}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children, title }) => {
+                if (href === "#spoiler") {
+                  return (
+                    <span className="markdown-spoiler">
+                      {children}
+                    </span>
+                  );
+                }
+            
+                return (
+                  <a href={href} title={title}>
+                    {children}
+                  </a>
+                );
+              },
+
+              table: ({ children }) => (
+                <div
+                  className="markdown-table-scroll"
+                  role="region"
+                  aria-label="文章表格"
+                  tabIndex={0}
+                >
+                  <table>{children}</table>
+                </div>
+              ),
+            }}
+          >
+            {post.content}
+          </Markdown>
         </div>
       </article>
     </main>
