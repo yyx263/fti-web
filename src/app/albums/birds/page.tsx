@@ -98,14 +98,13 @@ export default async function BirdsPage(props: BirdsPageProps) {
       <h1 className="mt-8 text-4xl font-bold">观鸟精选</h1>
 
       <p className="mt-5 leading-8 text-[#72766c]">
-        记录野外拍摄的鸟类照片，拒绝诱拍
+        记录野外拍摄的鸟类照片。
       </p>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="min-w-0 self-start rounded-xl border border-[#d8d8ce] p-4 lg:sticky lg:top-6 lg:max-h-[85vh] lg:overflow-y-auto">
           <nav aria-label="鸟类分类">
             <BirdTreePreview
-              key={`${directoryId}:${speciesName}`}
               directory={tree}
               selectedDirectoryId={directoryId}
               selectedSpeciesName={speciesName}

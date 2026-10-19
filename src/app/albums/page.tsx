@@ -6,7 +6,7 @@ const collections = [
     href: "/albums/birds",
     title: "观鸟精选",
     description:
-      "记录野外拍摄的鸟类照片，拒绝诱拍。",
+      "记录野外拍摄的鸟类照片。",
     label: "鸟类摄影",
   },
   {

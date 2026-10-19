@@ -45,6 +45,7 @@ export default function BirdTreePreview({
         <Link
           href={directoryHref}
           prefetch={false}
+          scroll={false}
           aria-label={`查看${directory.name}目录`}
           aria-current={
             isSelected && !selectedSpeciesName ? "page" : undefined
@@ -80,6 +81,7 @@ export default function BirdTreePreview({
                 },
               }}
               prefetch={false}
+              scroll={false}
               aria-current={active ? "page" : undefined}
               className={`block rounded px-2 py-2 text-sm ${
                 active
