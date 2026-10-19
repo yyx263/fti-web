@@ -1,5 +1,6 @@
 import SectionIntro from "@/components/SectionIntro";
 
+/** 画集入口，当前使用共用介绍布局。 */
 export default function ArtworksPage() {
   return (
     <SectionIntro

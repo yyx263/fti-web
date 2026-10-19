@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* 全站配色；下方 @theme 将变量映射为 Tailwind 主题。 */
 :root {
   --background: #f5f3ec;
   --foreground: #272c29;
@@ -12,6 +13,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 预留滚动条空间，减少长短页面切换时的水平位移。 */
 html {
   scrollbar-gutter: stable;
 }
@@ -22,7 +24,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* 正文 */
+/* 正文样式限定在 markdown-body 内，避免影响导航和卡片。 */
 .markdown-body {
   line-height: 1.8;
   overflow-wrap: anywhere;
@@ -133,7 +135,7 @@ body {
   overflow-wrap: normal;
 }
 
-/* 表格 */
+/* 表格由 Markdown 自定义组件包裹，仅容器内部允许横向滚动。 */
 .markdown-table-scroll {
   max-width: 100%;
   margin-block: 1.5rem;
@@ -162,6 +164,7 @@ body {
   background: #eae8df;
 }
 
+/* 保留 Markdown 表头显式指定的对齐方式。 */
 .markdown-body th:not([align]) {
   text-align: left;
 }
@@ -195,7 +198,7 @@ body {
   margin-right: 0.5rem;
 }
 
-/* 黑幕文字 */
+/* [文字](#spoiler) 的视觉遮挡效果，不用于保护敏感内容。 */
 .markdown-body .markdown-spoiler {
   background-color: #000;
   color: #000;
@@ -219,4 +222,69 @@ body {
 .markdown-body .markdown-spoiler:focus-visible {
   outline: 2px solid #d75834;
   outline-offset: 3px;
+}
+
+/* 目录标题行：展开操作与“查看”入口共用一行。 */
+.bird-directory-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.bird-directory-row::-webkit-details-marker {
+  display: none;
+}
+
+.bird-directory-row:hover {
+  background-color: #eae8df;
+}
+
+/* 自定义展开箭头，仅响应当前这一层目录。 */
+.bird-directory-arrow {
+  flex-shrink: 0;
+}
+
+details[open] > .bird-directory-row > .bird-directory-arrow {
+  transform: rotate(90deg);
+}
+
+/* 默认显示，保证触屏设备也能直接操作。 */
+.bird-directory-view {
+  flex-shrink: 0;
+  padding: 0.15rem 0.25rem;
+  color: #72766c;
+  font-size: 0.75rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.bird-directory-view:hover {
+  color: #d75834;
+}
+
+.bird-directory-row:focus-visible,
+.bird-directory-view:focus-visible {
+  outline: 2px solid #d75834;
+  outline-offset: 2px;
+}
+
+/* 支持鼠标悬停的设备：平时隐藏，悬停或键盘聚焦时显示。 */
+@media (hover: hover) and (pointer: fine) {
+  .bird-directory-view {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .bird-directory-row:hover > .bird-directory-view,
+  .bird-directory-row:focus-visible > .bird-directory-view,
+  .bird-directory-view:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }

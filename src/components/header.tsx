@@ -1,4 +1,4 @@
-// 导航组件
+// 全站导航；数组顺序即显示顺序，LOGO 提供返回首页入口。
 
 import Link from "next/link";
 

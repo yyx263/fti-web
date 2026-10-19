@@ -2,10 +2,12 @@ import Link from "next/link";
 import PostCard from "@/components/PostCard";
 import { getPostSummaries } from "@/data/posts";
 
+// 动态读取摘要，使首页最近文章与 NAS 已发布内容保持同步。
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const posts = await getPostSummaries();
+  // 数据层已按日期倒序排列，首页仅展示前三篇。
   const recentPosts = posts.slice(0, 3);
   const titleName = "让想法有形，让日常留影。";
   const description = "这里记录我们的工作和日常，以及一些尚未被证伪的奇思妙想";

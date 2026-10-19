@@ -1,8 +1,9 @@
-// 博客列表页
+// 博客列表：通过 URL 保存分类、标签和分页状态。
 import PostCard from "@/components/PostCard";
 import { getPostSummaries } from "@/data/posts";
 import Link from "next/link";
 
+// 每次服务端渲染读取最新文章，NAS 内容更新无需重新构建。
 export const dynamic = "force-dynamic";
 
 type BlogPageProps = {
@@ -17,18 +18,19 @@ export default async function BlogPage(props: BlogPageProps) {
   const searchParams = await props.searchParams;
   const posts = await getPostSummaries();
 
-  // 指定分类
+  // 重复查询参数会变成数组；这里只接受单个字符串，否则视为未选择。
   const selectedCategory =
     typeof searchParams.category === "string"
       ? searchParams.category
       : "";
 
-  // 指定tag
+  // 标签与分类独立，可组合筛选。
   const selectedTag =
     typeof searchParams.tag === "string"
       ? searchParams.tag
       : "";
 
+  // 从全部已发布文章提取分类，仅将“未分类”移至末尾。
   const categories = [
     ...new Set(posts.map((post) => post.category)),
   ].sort((a, b) => {
@@ -38,7 +40,7 @@ export default async function BlogPage(props: BlogPageProps) {
     return 0;
   });
 
-  // 先按分类和tag筛选
+  // 先取分类与标签的交集，再分页，保证计数和页码对应筛选结果。
   const filteredPosts = posts.filter((post) => {
     const matchesCategory =
       selectedCategory === "" ||
@@ -59,18 +61,19 @@ export default async function BlogPage(props: BlogPageProps) {
       ? Number(searchParams.page)
       : 1;
 
+  // 非整数或小于 1 的页码回退到第一页。
   const requestedPage =
     Number.isSafeInteger(pageValue) && pageValue >= 1
       ? pageValue
       : 1;
 
-  // 至少显示1页
+  // 空列表按 1 页计算，但不显示分页导航。
   const totalPages = Math.max(
     1,
     Math.ceil(filteredPosts.length / pageSize)
   );
 
-  // 最多不超过总页数
+  // 越界页码显示最后一页，不自动改写地址栏。
   const currentPage = Math.min(requestedPage, totalPages);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -80,7 +83,7 @@ export default async function BlogPage(props: BlogPageProps) {
     startIndex + pageSize
   );
 
-  // 制作翻页链接
+  /** 翻页保留全部筛选条件；第一页省略 page 参数。 */
   function getPageHref(page: number) {
     const query: Record<string, string> = {};
   
@@ -102,7 +105,7 @@ export default async function BlogPage(props: BlogPageProps) {
     };
   }
 
-  // 制作切换分类链接
+  /** 切换分类保留标签，省略页码以回到第一页。 */
   function getCategoryHref(category: string) {
     const query: Record<string, string> = {};
   

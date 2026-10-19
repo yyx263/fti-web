@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Local content; production content lives on the NAS
 /content/
+
+.cache

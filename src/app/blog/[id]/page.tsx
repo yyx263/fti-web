@@ -1,10 +1,11 @@
-// 文章详情页
+// 文章详情：按 ID 读取正文，并扩展 GFM 表格与站内黑幕标记。
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostById } from "@/data/posts";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+// 不预生成文章，允许 NAS 上的文章增删和草稿状态实时生效。
 export const dynamic = "force-dynamic";
 
 type PostPageProps = {
@@ -15,6 +16,7 @@ export default async function PostPage(props:PostPageProps) {
   const params = await props.params;
   const post = await getPostById(params.id);
 
+  // 读取层统一隐藏草稿及无效文章，页面只负责转入 404。
   if (!post) {
     notFound();
   }
@@ -75,6 +77,7 @@ export default async function PostPage(props:PostPageProps) {
           <Markdown
             remarkPlugins={[remarkGfm]}
             components={{
+              // 站内约定：[文字](#spoiler) 显示为黑幕；普通链接保持原语义。
               a: ({ href, children, title }) => {
                 if (href === "#spoiler") {
                   return (
@@ -91,6 +94,7 @@ export default async function PostPage(props:PostPageProps) {
                 );
               },
 
+              // 宽表格只在容器内滚动，避免撑宽整篇文章。
               table: ({ children }) => (
                 <div
                   className="markdown-table-scroll"

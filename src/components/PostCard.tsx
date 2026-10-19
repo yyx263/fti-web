@@ -9,7 +9,7 @@ type PostCardProps = {
   tags: string[];
 }
 
-// 显示摘要卡片
+/** 首页和博客列表共用的摘要卡片；分类、标签链接从第一页开始筛选。 */
 export default function PostCard(props: PostCardProps) {
   return (
     <article className="mt-6 border-b border-[#d8d8ce] pb-6">

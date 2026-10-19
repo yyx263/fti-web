@@ -7,6 +7,7 @@ type SectionIntroProps = {
   backLabel: string;
 };
 
+/** 尚未开放栏目的共用介绍页，返回入口由调用方指定。 */
 export default function SectionIntro(props: SectionIntroProps) {
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-20">

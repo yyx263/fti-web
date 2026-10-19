@@ -1,11 +1,12 @@
 import Link from "next/link";
 
+// 影集栏目入口；具体内容及布局由各子路由独立维护。
 const collections = [
   {
     href: "/albums/birds",
     title: "观鸟精选",
     description:
-      "记录野外拍摄的鸟类照片，拒绝塘拍诱拍。",
+      "记录野外拍摄的鸟类照片，拒绝诱拍。",
     label: "鸟类摄影",
   },
   {

@@ -1,5 +1,6 @@
 import SectionIntro from "@/components/SectionIntro";
 
+/** 资料入口，后续承载项目目录与 README 展示。 */
 export default function ProjectsPage() {
   return (
     <SectionIntro

@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
+/** 未匹配的路由及显式 notFound() 共用的 404 页面。 */
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center px-6 py-16">
       <div className="grid w-full items-center gap-10 md:grid-cols-[320px_1fr] md:gap-16">
+        {/* 插画位于首屏，提前加载以避免延迟显示。 */}
         <Image
           src="/illustrations/404-box.png"
           alt="头顶写着404的纸箱，一脸困惑的角色"

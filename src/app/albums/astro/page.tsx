@@ -1,5 +1,6 @@
 import SectionIntro from "@/components/SectionIntro";
 
+/** 星空栏目介绍页，待接入摄影作品。 */
 export default function AstroPage() {
   return (
     <SectionIntro

@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 
-// 文章摘要
+/** 列表和卡片使用的文章元数据，不包含 Markdown 正文。 */
 type PostSummary = {
   id: string;
   title: string;
@@ -12,12 +12,12 @@ type PostSummary = {
   tags: string[];
 };
 
-// 完整文章
+/** 详情页使用的完整文章。 */
 type Post = PostSummary & {
   content: string;
 };
 
-// 获取文章目录
+/** 优先使用 NAS 挂载目录，未配置时回退到项目内的 content。 */
 function getPostsDirectory(): string {
   const contentRoot =
     process.env.CONTENT_ROOT ??
@@ -26,7 +26,7 @@ function getPostsDirectory(): string {
   return path.join(contentRoot, "posts");
 }
 
-// 检查并整理文章信息
+/** 校验 front matter：草稿返回 null，必填字段或草稿标记格式错误时抛出异常。 */
 function parsePostSummary(
   id: string,
   data: Record<string, unknown>
@@ -50,6 +50,7 @@ function parsePostSummary(
     throw new Error(`${id}.md 的标题、日期和摘要必须填写为字符串`);
   }
 
+  // 可选字段提供默认值，以兼容未填写分类和标签的旧文章。
   const category =
     typeof data.category === "string" &&
     data.category.trim() !== ""
@@ -76,7 +77,7 @@ function parsePostSummary(
   };
 }
 
-// 读取摘要列表
+/** 扫描已发布文章并返回摘要；仍需读取完整文件，但返回值不包含正文。 */
 export async function getPostSummaries(): Promise<PostSummary[]> {
   const directory = getPostsDirectory();
   const files = await readdir(directory);
@@ -101,17 +102,20 @@ export async function getPostSummaries(): Promise<PostSummary[]> {
         posts.push(summary);
       }
     } catch (error) {
+      // 单篇读取或解析失败不影响其他文章；目录读取失败则交由上层处理。
       console.error(`读取文章 ${file} 失败：`, error);
     }
   }
 
+  // 日期约定为补齐位数的 YYYY-MM-DD 字符串，按字典序即可倒序排列。
   return posts.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-// 读取单篇文章
+/** 按 ID 直接读取一篇文章；不存在、草稿或解析失败返回 null，其他读取错误继续抛出。 */
 export async function getPostById(
   id: string
 ): Promise<Post | null> {
+  // ID 同时用于文件名；限定字符集，禁止路径分隔符和目录跳转。
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
     return null;
   }
