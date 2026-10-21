@@ -16,7 +16,7 @@ export default async function Home() {
     <main className="mx-auto w-full max-w-5xl px-6 py-20">
       
       <p className="text-sm tracking-widest text-[#d75834]">
-        FTI / FUTURE, THOUGHTS & IMAGINATIONS
+        FTI / FUTURE, TECHNOLOGY & IMAGINATIONS
       </p>
 
       <h1 className="mt-6 text-4xl font-bold">
