@@ -133,17 +133,19 @@ export default async function BirdsPage(props: BirdsPageProps) {
             <div className="mt-6">
               <BirdPhotoGrid
                 speciesName={selectedSpecies.name}
+                allPhotos={selectedSpecies.photos}
                 photos={selectedSpecies.photos.slice(
                   startIndex,
                   startIndex + pageSize
                 )}
+                eagerCount={2}
               />
             </div>
           ) : (
             <div className="space-y-8 pt-6">
               {speciesRows
                 .slice(startIndex, startIndex + pageSize)
-                .map(({ directoryId: rowDirectoryId, species }) => (
+                .map(({ directoryId: rowDirectoryId, species }, rowIndex) => (
                   <article key={species.id}>
                     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
                       <h3 className="text-lg font-semibold">
@@ -170,7 +172,9 @@ export default async function BirdsPage(props: BirdsPageProps) {
 
                     <BirdPhotoGrid
                       compact
+                      eagerCount={rowIndex === 0 ? 4 : 0}
                       speciesName={species.name}
+                      allPhotos={species.photos}
                       photos={species.photos.slice(0, 4)}
                     />
                   </article>

@@ -288,3 +288,76 @@ details[open] > .bird-directory-row > .bird-directory-arrow {
     pointer-events: auto;
   }
 }
+
+/* 照片查看器：半透明灰色遮罩，背景页面仍可隐约看见。 */
+.bird-viewer::backdrop {
+  background: rgb(60 60 60 / 72%);
+}
+
+.bird-viewer {
+  position: fixed;
+  inset: 0;
+  width: min(1400px, 96vw);
+  height: 92dvh;
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 0.75rem;
+  background: rgb(35 35 35 / 94%);
+  color: #fff;
+}
+
+.bird-viewer-layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+.bird-viewer button:focus-visible {
+  outline: 2px solid #d75834;
+  outline-offset: 3px;
+}
+
+/* 小屏幕参数放在照片下方，大屏幕放在右侧。 */
+.bird-viewer-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 9rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .bird-viewer-content {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+/* 工具栏占据固定内容高度，剩余空间用于照片。 */
+.bird-zoom-layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bird-zoom-viewport {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: none;
+  scrollbar-width: none;
+}
+
+.bird-zoom-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.bird-zoom-viewport.cursor-grab:active {
+  cursor: grabbing;
+}

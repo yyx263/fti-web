@@ -11,6 +11,10 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { runImageTask } from "@/lib/image-tasks";
+import exifr from "exifr";
+import type { BirdPhotoInfo } from "@/types/bird-photo";
+import { createReadStream } from "node:fs";
+import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,12 +35,34 @@ function imageResponse(image: Uint8Array, cacheHit: boolean) {
   });
 }
 
+/** 仅接受有限正数，避免损坏的 EXIF 值进入页面。 */
+function positiveNumber(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value > 0
+    ? value
+    : null;
+}
+
+function nonEmptyText(value: unknown): string | null {
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : null;
+}
+
 /** 仅从观鸟精选目录生成 JPG/JPEG 缩略图，不提供原图内容。 */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: ThumbnailContext
 ) {
   const { file } = await context.params;
+
+  // 只允许固定的图片规格，不接收任意尺寸。
+  const view = new URL(request.url).searchParams.get("view") ?? "thumb";
+
+  if (!["thumb", "preview", "info", "original"].includes(view)) {
+    return new Response("Invalid image view", { status: 400 });
+  }
 
   // 拒绝隐藏项、系统目录和非法路径段。
   if (
@@ -99,6 +125,82 @@ export async function GET(
       return new Response("Not found", { status: 404 });
     }
 
+    // 原图经过同样的路径检查，使用流传输，不整体读入服务端内存。
+    if (view === "original") {
+      const stream = createReadStream(sourcePath);
+      const body = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
+
+      return new Response(body, {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Content-Length": String(sourceInfo.size),
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
+
+    if (view === "info") {
+      const dimensions = await sharp(sourcePath).metadata();
+    
+      // 拍摄时间保留相机记录，不转换为 Date，避免时区偏移。
+      const tags: Record<string, unknown> =
+        (await exifr.parse(sourcePath, {
+          pick: [
+            "Model",
+            "FocalLength",
+            "ExposureTime",
+            "FNumber",
+            "ISO",
+            "DateTimeOriginal",
+          ],
+          reviveValues: false,
+        })) ?? {};
+    
+      // EXIF 方向为 5～8 时，正常显示后的宽高需要交换。
+      const orientation = dimensions.orientation ?? 1;
+      const swapDimensions = orientation >= 5 && orientation <= 8;
+    
+      const width = swapDimensions
+        ? dimensions.height
+        : dimensions.width;
+    
+      const height = swapDimensions
+        ? dimensions.width
+        : dimensions.height;
+    
+      if (!width || !height) {
+        throw new Error("无法读取照片尺寸");
+      }
+    
+      const capturedAt = nonEmptyText(tags.DateTimeOriginal);
+    
+      const info: BirdPhotoInfo = {
+        width,
+        height,
+        camera: nonEmptyText(tags.Model),
+        focalLength: positiveNumber(tags.FocalLength),
+        exposureTime: positiveNumber(tags.ExposureTime),
+        aperture: positiveNumber(tags.FNumber),
+        iso: positiveNumber(tags.ISO),
+        capturedAt:
+          capturedAt?.replace(
+            /^(\d{4}):(\d{2}):(\d{2})/,
+            "$1-$2-$3"
+          ) ?? null,
+      };
+    
+      return Response.json(info, {
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
+    
+    const imageSize = view === "preview" ? 1920 : 640;
+    const imageQuality = view === "preview" ? 85 : 80;
+
     const cacheRoot = path.resolve(
       process.env.BIRD_CACHE_ROOT ?? ".cache/birds"
     );
@@ -110,7 +212,7 @@ export async function GET(
           sourcePath,
           sourceInfo.size,
           sourceInfo.mtimeMs,
-          "thumb-v1-640-webp-80",
+          `${view}-v1-${imageSize}-webp-${imageQuality}`,
         ])
       )
       .digest("hex");
@@ -139,17 +241,17 @@ export async function GET(
     
       await mkdir(cacheRoot, { recursive: true });
 
-      console.log("生成缩略图：", relativePath);
+      console.log("生成 ${view} 图片：", relativePath);
     
       const thumbnail = await sharp(sourcePath)
         .rotate()
         .resize({
-          width: 640,
-          height: 640,
+          width: imageSize,
+          height: imageSize,
           fit: "inside",
           withoutEnlargement: true,
         })
-        .webp({ quality: 80 })
+        .webp({ quality: imageQuality })
         .toBuffer();
     
       // 临时文件名独立，避免多个生成任务互相覆盖未完成的文件。
