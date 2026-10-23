@@ -13,8 +13,6 @@ import sharp from "sharp";
 import { runImageTask } from "@/lib/image-tasks";
 import exifr from "exifr";
 import type { BirdPhotoInfo } from "@/types/bird-photo";
-import { createReadStream } from "node:fs";
-import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,15 +21,32 @@ type ThumbnailContext = {
   params: Promise<{ file: string[] }>;
 };
 
-/** 返回缩略图；暂不使用浏览器缓存，方便验证原图替换后的更新。 */
-function imageResponse(image: Uint8Array, cacheHit: boolean) {
+/** 原尺寸图片同样只返回去除私密元数据的网页副本。 */
+function imageResponse(
+  image: Uint8Array,
+  cacheHit: boolean,
+  originalFilename?: string,
+  download = false
+) {
+  const headers: Record<string, string> = {
+    "Content-Type": originalFilename ? "image/jpeg" : "image/webp",
+    "Content-Length": String(image.byteLength),
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Thumbnail-Cache": cacheHit ? "HIT" : "MISS",
+  };
+  if (originalFilename) {
+    // ASCII 回退名称兼容旧客户端，filename* 保留中文鸟名。
+    const filename = `${path.parse(originalFilename).name}.jpg`;
+    const encoded = encodeURIComponent(filename).replace(
+      /['()*]/g,
+      (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+    );
+    headers["Content-Disposition"] =
+      `${download ? "attachment" : "inline"}; filename="bird-photo.jpg"; filename*=UTF-8''${encoded}`;
+  }
   return new Response(new Uint8Array(image), {
-    headers: {
-      "Content-Type": "image/webp",
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-      "X-Thumbnail-Cache": cacheHit ? "HIT" : "MISS",
-    },
+    headers,
   });
 }
 
@@ -50,7 +65,7 @@ function nonEmptyText(value: unknown): string | null {
     : null;
 }
 
-/** 仅从观鸟精选目录生成 JPG/JPEG 缩略图，不提供原图内容。 */
+/** 从精选目录生成缩略图、预览及去除位置元数据的全尺寸副本。 */
 export async function GET(
   request: Request,
   context: ThumbnailContext
@@ -58,7 +73,9 @@ export async function GET(
   const { file } = await context.params;
 
   // 只允许固定的图片规格，不接收任意尺寸。
-  const view = new URL(request.url).searchParams.get("view") ?? "thumb";
+  const searchParams = new URL(request.url).searchParams;
+  const view = searchParams.get("view") ?? "thumb";
+  const download = searchParams.get("download") === "1";
 
   if (!["thumb", "preview", "info", "original"].includes(view)) {
     return new Response("Invalid image view", { status: 400 });
@@ -125,21 +142,6 @@ export async function GET(
       return new Response("Not found", { status: 404 });
     }
 
-    // 原图经过同样的路径检查，使用流传输，不整体读入服务端内存。
-    if (view === "original") {
-      const stream = createReadStream(sourcePath);
-      const body = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
-
-      return new Response(body, {
-        headers: {
-          "Content-Type": "image/jpeg",
-          "Content-Length": String(sourceInfo.size),
-          "Cache-Control": "no-store",
-          "X-Content-Type-Options": "nosniff",
-        },
-      });
-    }
-
     if (view === "info") {
       const dimensions = await sharp(sourcePath).metadata();
     
@@ -200,6 +202,7 @@ export async function GET(
     
     const imageSize = view === "preview" ? 1920 : 640;
     const imageQuality = view === "preview" ? 85 : 80;
+    const originalFilename = view === "original" ? file.at(-1) : undefined;
 
     const cacheRoot = path.resolve(
       process.env.BIRD_CACHE_ROOT ?? ".cache/birds"
@@ -212,16 +215,18 @@ export async function GET(
           sourcePath,
           sourceInfo.size,
           sourceInfo.mtimeMs,
-          `${view}-v1-${imageSize}-webp-${imageQuality}`,
+          view === "original"
+            ? "original-private-v1-jpeg-100-444"
+            : `${view}-v1-${imageSize}-webp-${imageQuality}`,
         ])
       )
       .digest("hex");
 
-    const cachePath = path.join(cacheRoot, `${cacheKey}.webp`);
+    const cachePath = path.join(cacheRoot, `${cacheKey}.${originalFilename ? "jpg" : "webp"}`);
 
     try {
       const cachedImage = await readFile(cachePath);
-      return imageResponse(cachedImage, true);
+      return imageResponse(cachedImage, true, originalFilename, download);
     } catch (error) {
       // 仅在缓存不存在时生成；权限等错误继续上抛。
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -241,11 +246,15 @@ export async function GET(
     
       await mkdir(cacheRoot, { recursive: true });
 
-      console.log("生成 ${view} 图片：", relativePath);
+      console.log(`生成 ${view} 图片：`, relativePath);
     
-      const thumbnail = await sharp(sourcePath)
-        .rotate()
-        .resize({
+      // 先应用 EXIF 方向，再移除元数据，避免竖拍照片方向出错。
+      // 不调用 keepMetadata/keepExif，防止 EXIF、XMP 或 IPTC 中的位置泄露。
+      const pipeline = sharp(sourcePath).rotate();
+      const thumbnail = originalFilename
+        ? await pipeline.keepIccProfile()
+          .jpeg({ quality: 100, chromaSubsampling: "4:4:4" }).toBuffer()
+        : await pipeline.resize({
           width: imageSize,
           height: imageSize,
           fit: "inside",
@@ -276,9 +285,9 @@ export async function GET(
       return thumbnail;
     });
     
-    return imageResponse(image, false);
+    return imageResponse(image, false, originalFilename, download);
   } catch (error) {
-    console.error("生成鸟类缩略图失败：", error);
-    return new Response("Unable to create thumbnail", { status: 500 });
+    console.error("生成鸟类图片失败：", error);
+    return new Response("Unable to create image", { status: 500 });
   }
 }

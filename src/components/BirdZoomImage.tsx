@@ -174,6 +174,14 @@ export default function BirdZoomImage({
           {original ? "返回预览" : "查看原图"}
         </button>
 
+        <a
+          href={`${imageUrl}?view=original&download=1`}
+          download
+          className={buttonClass}
+        >
+          下载原图
+        </a>
+
         <button
           type="button"
           disabled={!canZoom || scale <= fitScale}
