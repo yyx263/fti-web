@@ -9,8 +9,8 @@ export default async function Home() {
   const posts = await getPostSummaries();
   // 数据层已按日期倒序排列，首页仅展示前三篇。
   const recentPosts = posts.slice(0, 3);
-  const titleName = "让想法有形，让日常留影。";
-  const description = "这里记录我们的工作和日常，以及一些尚未被证伪的奇思妙想";
+  const titleName = "过去在远离，未来是否意味着正在靠近";
+  const description = "这里记录着 Labmem 的工作和 Lab 的日常，以及一些尚未被证伪的奇思妙想";
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-20">
@@ -22,10 +22,6 @@ export default async function Home() {
       <h1 className="mt-6 text-4xl font-bold">
         {titleName}
       </h1>
-      
-      <h2 className="mt-4 text-2xl leading-relaxed">
-        过去在远离，未来是否意味着正在靠近。
-      </h2>
 
       <p className="mt-6 max-w-xl text-base leading-8 text-[#72766c]">
         {description}
