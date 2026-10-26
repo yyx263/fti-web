@@ -5,7 +5,7 @@ WORKDIR /app
 
 # 依赖清单独立复制，使仅修改源码时可复用安装层。
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --registry=https://registry.npmmirror.com
 
 COPY . .
 RUN npm run build
