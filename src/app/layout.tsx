@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 // 全站默认元数据；子页面可定义自己的标题和描述。
 export const metadata: Metadata = {
-  title: "FTI",
+  title: "FTI 手记",
   description: "记录 DIY、插画、摄影作品与日常随笔。",
 };
 
